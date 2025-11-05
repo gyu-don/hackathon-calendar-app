@@ -14,7 +14,7 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"worker/**/*.ts\"",
     "test": "npm run test:frontend && npm run test:worker",
     "test:frontend": "vitest run --config vitest.config.frontend.ts",
-    "test:worker": "vitest run --config vitest.config.ts",
+    "test:worker": "mkdir -p dist && vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.frontend.ts",
     "prepare": "husky"
   },
