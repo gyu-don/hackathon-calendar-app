@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2020"],
+    "types": ["@cloudflare/workers-types/2023-07-01", "./worker-configuration.d.ts"],
+    "jsx": "preserve",
+    "noEmit": true
+  },
+  "include": ["worker/**/*", "worker-configuration.d.ts"],
+  "exclude": ["node_modules"]
+}
