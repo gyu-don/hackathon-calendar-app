@@ -45,7 +45,7 @@ export default {
 
       // Google OAuth2認証を開始
       if (url.pathname === '/api/auth/google') {
-        const authUrl = generateAuthUrl(env)
+        const authUrl = generateAuthUrl(env, url)
         return new Response(JSON.stringify({ authUrl }), {
           headers: {
             'Content-Type': 'application/json',
@@ -64,7 +64,7 @@ export default {
           })
         }
 
-        const tokenResponse = await exchangeCodeForToken(code, env)
+        const tokenResponse = await exchangeCodeForToken(code, env, url)
         const sessionCookie = createSessionCookie(tokenResponse.access_token)
 
         // フロントエンドにリダイレクト

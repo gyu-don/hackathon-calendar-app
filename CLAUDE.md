@@ -142,9 +142,13 @@ describe('NewComponent', () => {
 ### 3. 環境変数の追加
 
 1. `worker/types.ts`の`Env`インターフェースに追加
-2. `wrangler.toml`に設定を追加
+2. 必要に応じて`wrangler.toml`に設定を追加（機密情報は含めない）
 3. `.dev.vars.example`を更新
 4. `.dev.vars`に実際の値を設定
+
+**注意**: OAuth関連の環境変数について
+- `GOOGLE_REDIRECT_URI`は不要です（リクエスト元から自動構築されます）
+- `GOOGLE_CLIENT_ID`と`GOOGLE_CLIENT_SECRET`は`.dev.vars`に設定し、本番環境では`wrangler secret put`コマンドで設定してください
 
 ### 4. Google API機能の追加
 
@@ -220,22 +224,37 @@ npx wrangler deploy
 
 #### Google OAuth2のリダイレクトURI設定
 
+リダイレクトURIは、リクエスト元のホストから自動的に構築されます（例: `https://calendar-worker.gyu-don.workers.dev/api/auth/callback`）。
+
 Google Cloud Consoleで、OAuth2クライアントに以下のリダイレクトURIを登録してください：
 
 ```
-https://calendar-worker.gyu-don.workers.dev/auth/callback
-http://localhost:8787/auth/callback
+https://calendar-worker.gyu-don.workers.dev/api/auth/callback
+http://localhost:8787/api/auth/callback
 ```
 
-**プレビュー環境での認証**：
-- コミットIDやブランチごとのプレビューURLは動的に生成されるため、すべてのURLをGoogle Cloud Consoleに登録することは現実的ではありません
-- ただし、**セッションクッキーはすべての`*.gyu-don.workers.dev`サブドメインで共有される**よう実装されています
-- これにより、以下の手順でプレビュー環境でもOAuth機能をテストできます：
+プレビュー環境でもOAuth機能を使いたい場合は、そのURLも登録できます：
+```
+https://<commit-id>-calendar-worker.gyu-don.workers.dev/api/auth/callback
+https://<branch-name>-calendar-worker.gyu-don.workers.dev/api/auth/callback
+```
 
-**プレビュー環境でOAuth機能をテストする手順**：
-1. 本番環境（`https://calendar-worker.gyu-don.workers.dev/`）で認証を実行
-2. 認証成功後、同じブラウザでプレビュー環境のURLにアクセス
-3. セッションクッキーが共有されているため、プレビュー環境でも認証済み状態で動作します
+**プレビュー環境での認証（2つの方法）**：
+
+**方法1: プレビュー環境のURLをGoogle Cloud Consoleに登録**
+- 特定のプレビュー環境で直接OAuth認証を実行したい場合、そのURLをGoogle Cloud ConsoleのリダイレクトURIに追加
+- 例: `https://16762b7a-calendar-worker.gyu-don.workers.dev/api/auth/callback`
+- メリット: プレビュー環境で完全にOAuth機能をテスト可能
+- デメリット: コミットごとに登録が必要
+
+**方法2: セッションクッキーの共有を利用（推奨）**
+- **セッションクッキーはすべての`*.gyu-don.workers.dev`サブドメインで共有される**よう実装されています
+- 手順:
+  1. 本番環境（`https://calendar-worker.gyu-don.workers.dev/`）で認証を実行
+  2. 認証成功後、同じブラウザでプレビュー環境のURLにアクセス
+  3. セッションクッキーが共有されているため、プレビュー環境でも認証済み状態で動作します
+- メリット: Google Cloud Consoleへの登録不要
+- デメリット: プレビュー環境で直接OAuth認証を開始できない
 
 **セキュリティ上の注意**：
 - `Domain=.gyu-don.workers.dev`により、すべてのサブドメインでクッキーが共有されます
@@ -309,12 +328,16 @@ npm test
 
 1. Google Cloud Consoleで設定を確認
 2. リダイレクトURIが正確に一致するか確認
+   - リダイレクトURIは`https://<your-domain>/api/auth/callback`の形式です
+   - 本番環境: `https://calendar-worker.gyu-don.workers.dev/api/auth/callback`
+   - ローカル: `http://localhost:8787/api/auth/callback`
 3. `.dev.vars`の内容を確認
 4. アクセススコープが正しいか確認
 5. **プレビュー環境でのOAuth認証エラー**:
-   - プレビュー環境で直接OAuth認証を実行しようとすると、リダイレクトURIが登録されていないため失敗します
-   - 解決方法: 本番環境（`https://calendar-worker.gyu-don.workers.dev/`）で認証を実行してから、プレビュー環境にアクセスしてください
-   - セッションクッキーが`*.gyu-don.workers.dev`全体で共有されているため、認証情報が引き継がれます
+   - プレビュー環境で直接OAuth認証を実行しようとすると、リダイレクトURIが登録されていないため失敗する場合があります
+   - 解決方法1: プレビュー環境のURLをGoogle Cloud Consoleに登録
+   - 解決方法2（推奨）: 本番環境（`https://calendar-worker.gyu-don.workers.dev/`）で認証を実行してから、プレビュー環境にアクセス
+     - セッションクッキーが`*.gyu-don.workers.dev`全体で共有されているため、認証情報が引き継がれます
 
 ## 参考リンク
 

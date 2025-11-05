@@ -2,11 +2,16 @@ import type { Env, GoogleTokenResponse } from './types'
 
 /**
  * Google OAuth2認証URLを生成
+ * @param env 環境変数
+ * @param requestUrl リクエストURL（リダイレクトURIの構築に使用）
  */
-export function generateAuthUrl(env: Env): string {
+export function generateAuthUrl(env: Env, requestUrl: URL): string {
+  // リクエスト元のホストを使って動的にリダイレクトURIを構築
+  const redirectUri = `${requestUrl.protocol}//${requestUrl.host}/api/auth/callback`
+
   const params = new URLSearchParams({
     client_id: env.GOOGLE_CLIENT_ID,
-    redirect_uri: env.GOOGLE_REDIRECT_URI,
+    redirect_uri: redirectUri,
     response_type: 'code',
     scope: 'https://www.googleapis.com/auth/calendar.readonly',
     access_type: 'offline',
@@ -18,15 +23,25 @@ export function generateAuthUrl(env: Env): string {
 
 /**
  * 認可コードをアクセストークンに交換
+ * @param code 認可コード
+ * @param env 環境変数
+ * @param requestUrl リクエストURL（リダイレクトURIの構築に使用）
  */
-export async function exchangeCodeForToken(code: string, env: Env): Promise<GoogleTokenResponse> {
+export async function exchangeCodeForToken(
+  code: string,
+  env: Env,
+  requestUrl: URL
+): Promise<GoogleTokenResponse> {
   const tokenEndpoint = 'https://oauth2.googleapis.com/token'
+
+  // リクエスト元のホストを使って動的にリダイレクトURIを構築
+  const redirectUri = `${requestUrl.protocol}//${requestUrl.host}/api/auth/callback`
 
   const params = new URLSearchParams({
     code,
     client_id: env.GOOGLE_CLIENT_ID,
     client_secret: env.GOOGLE_CLIENT_SECRET,
-    redirect_uri: env.GOOGLE_REDIRECT_URI,
+    redirect_uri: redirectUri,
     grant_type: 'authorization_code',
   })
 

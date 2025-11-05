@@ -13,5 +13,4 @@ not_found_handling = "single-page-application"
 # これらの値は本番環境では`wrangler secret put`コマンドで設定してください
 # 例: wrangler secret put GOOGLE_CLIENT_ID
 # 開発環境では .dev.vars ファイルに設定してください
-[vars]
-GOOGLE_REDIRECT_URI = "http://localhost:8787/api/auth/callback"
+# 注: GOOGLE_REDIRECT_URIは不要です（リクエスト元から自動構築されます）
