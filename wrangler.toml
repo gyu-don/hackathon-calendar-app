@@ -1,0 +1,6 @@
+name = "calendar-worker"
+main = "worker/index.ts"
+compatibility_date = "2025-10-11"
+
+[build]
+command = "npm install"
