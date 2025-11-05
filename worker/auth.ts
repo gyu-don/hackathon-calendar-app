@@ -64,27 +64,47 @@ export async function exchangeCodeForToken(
 /**
  * セッションCookieを作成
  * @param accessToken アクセストークン
- * @param isSecure HTTPSかどうか（HTTPS環境ではSecure属性が必須）
+ * @param requestUrl リクエストURL（Domain属性の判定に使用）
  */
-export function createSessionCookie(accessToken: string, isSecure: boolean): string {
+export function createSessionCookie(accessToken: string, requestUrl: URL): string {
   // 本番環境では、暗号化や署名を追加することを推奨
   const session = JSON.stringify({
     accessToken,
     createdAt: Date.now(),
   })
 
-  // 基本的なCookie属性
-  let cookieString = `session=${encodeURIComponent(session)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=3600`
+  const isSecure = requestUrl.protocol === 'https:'
+  const host = requestUrl.host
 
-  // HTTPSの場合はSecure属性を追加
+  console.log('[Cookie Debug] Creating session cookie:', {
+    host,
+    isSecure,
+    protocol: requestUrl.protocol,
+  })
+
+  // 基本的なCookie属性
+  let cookieString = `session=${encodeURIComponent(session)}; Path=/; HttpOnly; Max-Age=3600`
+
+  // HTTPSの場合はSecure属性を追加し、SameSiteをNoneに設定
+  // SameSite=None は、クロスサイトのOAuthリダイレクト後もCookieが設定されるために必要
+  // Secure属性がない場合は SameSite=None を使用できないため、Laxを使用
   if (isSecure) {
-    cookieString += `; Secure`
+    cookieString += `; Secure; SameSite=None`
+  } else {
+    // HTTP（ローカル開発）の場合はSameSite=Lax
+    cookieString += `; SameSite=Lax`
   }
 
   // *.gyu-don.workers.devドメインの場合のみDomain属性を追加
   // これにより、本番環境で認証した後、プレビュー環境でも認証情報を使い回せる
-  // Note: Domainを指定しない場合は、現在のホストにのみCookieが設定される
-  cookieString += `; Domain=.gyu-don.workers.dev`
+  if (host.includes('gyu-don.workers.dev')) {
+    cookieString += `; Domain=.gyu-don.workers.dev`
+    console.log('[Cookie Debug] Added Domain attribute for workers.dev')
+  } else {
+    console.log('[Cookie Debug] No Domain attribute (localhost or other domain)')
+  }
+
+  console.log('[Cookie Debug] Final cookie string:', cookieString.substring(0, 100) + '...')
 
   return cookieString
 }

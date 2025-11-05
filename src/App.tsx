@@ -101,12 +101,21 @@ function App() {
   // 認証成功時の処理
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    if (params.get('auth') === 'success') {
+    const authStatus = params.get('auth')
+
+    if (authStatus === 'success') {
+      console.log('[Auth Debug] Authentication successful')
       setIsAuthenticated(true)
       // URLからパラメータを削除
       window.history.replaceState({}, '', '/')
       // イベントを取得
       fetchEvents()
+    } else if (authStatus === 'error') {
+      const errorMessage = params.get('message') || 'unknown_error'
+      console.error('[Auth Debug] Authentication failed:', errorMessage)
+      alert(`認証に失敗しました: ${errorMessage}`)
+      // URLからパラメータを削除
+      window.history.replaceState({}, '', '/')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

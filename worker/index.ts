@@ -56,27 +56,72 @@ export default {
 
       // OAuth2コールバック
       if (url.pathname === '/api/auth/callback') {
+        console.log('[OAuth Debug] Callback received:', {
+          url: url.href,
+          hasCode: !!url.searchParams.get('code'),
+          hasError: !!url.searchParams.get('error'),
+        })
+
         const code = url.searchParams.get('code')
-        if (!code) {
-          return new Response('Authorization code not found', {
-            status: 400,
-            headers: corsHeaders,
+        const error = url.searchParams.get('error')
+
+        if (error) {
+          console.error('[OAuth Debug] OAuth error:', error)
+          // エラー時は絶対URLでリダイレクト
+          const redirectUrl = `${url.protocol}//${url.host}/?auth=error&message=${encodeURIComponent(error)}`
+          return new Response(null, {
+            status: 302,
+            headers: {
+              Location: redirectUrl,
+              ...corsHeaders,
+            },
           })
         }
 
-        const tokenResponse = await exchangeCodeForToken(code, env, url)
-        const isSecure = url.protocol === 'https:'
-        const sessionCookie = createSessionCookie(tokenResponse.access_token, isSecure)
+        if (!code) {
+          console.error('[OAuth Debug] No authorization code found')
+          const redirectUrl = `${url.protocol}//${url.host}/?auth=error&message=no_code`
+          return new Response(null, {
+            status: 302,
+            headers: {
+              Location: redirectUrl,
+              ...corsHeaders,
+            },
+          })
+        }
 
-        // フロントエンドにリダイレクト
-        return new Response(null, {
-          status: 302,
-          headers: {
-            Location: '/?auth=success',
-            'Set-Cookie': sessionCookie,
-            ...corsHeaders,
-          },
-        })
+        try {
+          console.log('[OAuth Debug] Exchanging code for token...')
+          const tokenResponse = await exchangeCodeForToken(code, env, url)
+          console.log('[OAuth Debug] Token exchange successful')
+
+          const sessionCookie = createSessionCookie(tokenResponse.access_token, url)
+          console.log('[OAuth Debug] Session cookie created')
+
+          // フロントエンドに絶対URLでリダイレクト
+          const redirectUrl = `${url.protocol}//${url.host}/?auth=success`
+          console.log('[OAuth Debug] Redirecting to:', redirectUrl)
+
+          return new Response(null, {
+            status: 302,
+            headers: {
+              Location: redirectUrl,
+              'Set-Cookie': sessionCookie,
+              ...corsHeaders,
+            },
+          })
+        } catch (error) {
+          console.error('[OAuth Debug] Token exchange failed:', error)
+          const errorMessage = error instanceof Error ? error.message : 'unknown_error'
+          const redirectUrl = `${url.protocol}//${url.host}/?auth=error&message=${encodeURIComponent(errorMessage)}`
+          return new Response(null, {
+            status: 302,
+            headers: {
+              Location: redirectUrl,
+              ...corsHeaders,
+            },
+          })
+        }
       }
 
       // カレンダーイベント取得
