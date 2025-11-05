@@ -65,7 +65,8 @@ export default {
         }
 
         const tokenResponse = await exchangeCodeForToken(code, env, url)
-        const sessionCookie = createSessionCookie(tokenResponse.access_token)
+        const isSecure = url.protocol === 'https:'
+        const sessionCookie = createSessionCookie(tokenResponse.access_token, isSecure)
 
         // フロントエンドにリダイレクト
         return new Response(null, {
