@@ -63,17 +63,30 @@ export async function exchangeCodeForToken(
 
 /**
  * セッションCookieを作成
+ * @param accessToken アクセストークン
+ * @param isSecure HTTPSかどうか（HTTPS環境ではSecure属性が必須）
  */
-export function createSessionCookie(accessToken: string): string {
+export function createSessionCookie(accessToken: string, isSecure: boolean): string {
   // 本番環境では、暗号化や署名を追加することを推奨
   const session = JSON.stringify({
     accessToken,
     createdAt: Date.now(),
   })
 
-  // Domain属性を追加して、すべての*.gyu-don.workers.devサブドメインでクッキーを共有
+  // 基本的なCookie属性
+  let cookieString = `session=${encodeURIComponent(session)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=3600`
+
+  // HTTPSの場合はSecure属性を追加
+  if (isSecure) {
+    cookieString += `; Secure`
+  }
+
+  // *.gyu-don.workers.devドメインの場合のみDomain属性を追加
   // これにより、本番環境で認証した後、プレビュー環境でも認証情報を使い回せる
-  return `session=${encodeURIComponent(session)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=3600; Domain=.gyu-don.workers.dev`
+  // Note: Domainを指定しない場合は、現在のホストにのみCookieが設定される
+  cookieString += `; Domain=.gyu-don.workers.dev`
+
+  return cookieString
 }
 
 /**
