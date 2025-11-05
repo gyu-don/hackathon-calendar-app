@@ -56,6 +56,32 @@
   transition: all 0.2s;
 }
 
-.calendar-controls button:hover {
+.calendar-controls button:hover:not(:disabled) {
   background-color: #f0f0f0;
+}
+
+.calendar-controls button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.google-connect-btn {
+  background-color: #4285f4 !important;
+  color: white !important;
+  border-color: #4285f4 !important;
+  font-weight: 500;
+}
+
+.google-connect-btn:hover:not(:disabled) {
+  background-color: #3367d6 !important;
+}
+
+.refresh-btn {
+  background-color: #34a853 !important;
+  color: white !important;
+  border-color: #34a853 !important;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background-color: #2d8e47 !important;
 }

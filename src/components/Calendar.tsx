@@ -3,12 +3,26 @@ import './Calendar.css'
 
 type ViewMode = 'month' | 'week'
 
+interface CalendarEvent {
+  id: string
+  summary: string
+  start: {
+    dateTime?: string
+    date?: string
+  }
+  end: {
+    dateTime?: string
+    date?: string
+  }
+}
+
 interface CalendarProps {
   currentDate: Date
   viewMode: ViewMode
+  events?: CalendarEvent[]
 }
 
-const Calendar = ({ currentDate, viewMode }: CalendarProps) => {
+const Calendar = ({ currentDate, viewMode, events = [] }: CalendarProps) => {
   const { year, month, displayMonth } = useMemo(() => {
     const year = currentDate.getFullYear()
     const month = currentDate.getMonth()
@@ -23,6 +37,27 @@ const Calendar = ({ currentDate, viewMode }: CalendarProps) => {
       return generateWeekDays(currentDate)
     }
   }, [year, month, currentDate, viewMode])
+
+  // 各日付に対応するイベントを取得
+  const getEventsForDay = (date: Date): CalendarEvent[] => {
+    return events.filter((event) => {
+      const eventStart = event.start.dateTime
+        ? new Date(event.start.dateTime)
+        : new Date(event.start.date + 'T00:00:00')
+      const eventEnd = event.end.dateTime
+        ? new Date(event.end.dateTime)
+        : new Date(event.end.date + 'T00:00:00')
+
+      const dayStart = new Date(date)
+      dayStart.setHours(0, 0, 0, 0)
+
+      const dayEnd = new Date(date)
+      dayEnd.setHours(23, 59, 59, 999)
+
+      // イベントがその日に含まれるかチェック
+      return eventStart <= dayEnd && eventEnd >= dayStart
+    })
+  }
 
   return (
     <div className="calendar">
@@ -41,16 +76,29 @@ const Calendar = ({ currentDate, viewMode }: CalendarProps) => {
         </div>
         {weeks.map((week, weekIndex) => (
           <div key={weekIndex} className="calendar-week">
-            {week.map((day, dayIndex) => (
-              <div
-                key={dayIndex}
-                className={`calendar-day ${day.isCurrentMonth ? '' : 'other-month'} ${
-                  day.isToday ? 'today' : ''
-                }`}
-              >
-                <div className="day-number">{day.date}</div>
-              </div>
-            ))}
+            {week.map((day, dayIndex) => {
+              const dayEvents = getEventsForDay(day.fullDate)
+              return (
+                <div
+                  key={dayIndex}
+                  className={`calendar-day ${day.isCurrentMonth ? '' : 'other-month'} ${
+                    day.isToday ? 'today' : ''
+                  }`}
+                >
+                  <div className="day-number">{day.date}</div>
+                  <div className="day-events">
+                    {dayEvents.slice(0, 3).map((event) => (
+                      <div key={event.id} className="event" title={event.summary}>
+                        {event.summary}
+                      </div>
+                    ))}
+                    {dayEvents.length > 3 && (
+                      <div className="event-more">+{dayEvents.length - 3}件</div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         ))}
       </div>
