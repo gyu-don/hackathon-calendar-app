@@ -3,4 +3,8 @@ main = "worker/index.ts"
 compatibility_date = "2025-10-11"
 
 [build]
-command = "npm install"
+command = "npm run build"
+
+[assets]
+directory = "dist"
+not_found_handling = "single-page-application"
